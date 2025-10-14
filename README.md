@@ -1,0 +1,2 @@
+# yandex
+Rust Yandex Practicum 
