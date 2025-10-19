@@ -27,7 +27,23 @@ impl fmt::Display for ParseError {
     }
 }
 
+impl fmt::Display for SerializeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SerializeError::Csv(msg) => write!(f, "{}", msg),
+            SerializeError::Xml(msg) => write!(f, "{}", msg),
+            SerializeError::Io(err) => write!(f, "{}", err),
+        }
+    }
+}
+
 impl Error for ParseError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        Some(self)
+    }
+}
+
+impl Error for SerializeError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         Some(self)
     }
@@ -36,5 +52,11 @@ impl Error for ParseError {
 impl From<std::io::Error> for ParseError  {
     fn from(err: std::io::Error) -> ParseError {
         ParseError::Io(err)
+    }
+}
+
+impl From<std::io::Error> for SerializeError  {
+    fn from(err: std::io::Error) -> SerializeError {
+        SerializeError::Io(err)
     }
 }
