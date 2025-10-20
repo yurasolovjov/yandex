@@ -12,9 +12,7 @@ pub use csv::{
     CSVReader
 };
 use std::io::{ Write, Read};
-use csv::{
-    financial_records_to_csv_reader
-};
+use tempfile::NamedTempFile;
 
 
 pub trait ParserRecord{
@@ -22,18 +20,20 @@ pub trait ParserRecord{
 }
 
 pub trait SerializeRecord{
-    fn serialize<W:Write, I: IntoIterator<Item=FinancialRecord>>(&self, records: I, writer: W) -> Result<(), SerializeError>;
+    fn serialize<W:Write, I: IntoIterator<Item=FinancialRecord>>(&self, records: I, writer: &mut W) -> Result<(), SerializeError>;
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::csv::CSVWriter;
     use super::*;
 
     #[test]
-    fn it_works() {
+    fn csv_read_write_tests() {
         let parser = CSVReader;
+        let serializer = CSVWriter;
 
-        let records = vec![
+        let input_records = vec![
             FinancialRecord {
                 transaction_id: "txn_001".to_string(),
                 amount: 150.75,
@@ -78,14 +78,40 @@ mod tests {
             },
         ];
 
-        let cursor = financial_records_to_csv_reader(records);
-
         use ParserRecord;
+        use SerializeRecord;
 
-        let data = parser.parse(cursor).unwrap();
+        let mut tmp_file = NamedTempFile::new().unwrap();
+        match serializer.serialize(input_records.clone(), &mut tmp_file) {
+            Err(SerializeError::Csv(csv_error)) => {
+                println!("{:?}", csv_error);
+            }
+            Err(SerializeError::Io(io_error)) => {
+                println!("{:?}", io_error);
+            }
+            Ok(()) => {
+                println!("OK");
+            }
+        }
+        let read_tmp_file = tmp_file.reopen().unwrap();
 
-        for record in data {
-            println!("{}", record.description);
+        let output_records =  match parser.parse(read_tmp_file) {
+            Ok(out) => {
+                out
+            }
+            Err(ParseError::Csv(err)) => {
+                panic!("{}", err)
+            }
+            _ => {
+                panic!("Parse error")
+            }
+        };
+
+        let zipped = output_records
+            .into_iter().zip(input_records.into_iter());
+
+        for (i, (in_rec, out_rec)) in zipped.enumerate(){
+            assert_eq!(in_rec, out_rec, "FinancialRecords should be equal");
         }
     }
 }

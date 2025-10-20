@@ -1,44 +1,31 @@
-use std::io::{self, Read, Write, BufReader, BufRead};
+use std::io::{self, Read, Write, BufReader, BufRead, Cursor, };
 use crate::{FinancialRecord, ParserRecord, ParseError, SerializeRecord, SerializeError};
-use std::io::Cursor;
+use csv::{ReaderBuilder, WriterBuilder};
 
 use std::fs::File;
 pub struct CSVReader;
+pub struct CSVWriter;
 
 impl ParserRecord for CSVReader {
     fn parse<R: Read>(&self, input: R) -> Result<Vec<FinancialRecord>, ParseError> {
-        parse_csv(input)
-    }
-}
+        let mut rdr = ReaderBuilder::new().from_reader(input);
+        let mut records = Vec::new();
 
-fn parse_csv<R: Read, C: TryFrom<String, Error = ParseError>>(reader: R) -> Result<Vec<C>, ParseError> {
-    let mut csv_reader = BufReader::new(reader);
-    let mut vec: Vec<C> = Vec::new();
-
-    for (i, line) in csv_reader.lines().enumerate() {
-        let line = line?;
-        if line.is_empty() {
-            continue;
+        for result in rdr.deserialize() {
+            records.push(result?);
         }
-        vec.push(C::try_from(line)?);
+        Ok(records)
     }
-    Ok(vec)
 }
 
 
-impl SerializeRecord for FinancialRecord {
+impl SerializeRecord for CSVWriter {
     fn serialize<W: Write, I: IntoIterator<Item=FinancialRecord>>(&self, records: I, writer: &mut W) -> Result<(), SerializeError> {
+        let mut w = WriterBuilder::new().from_writer(writer);
         for record in records {
-            writer.write(record.to_csv_line().as_bytes())?;
+            w.serialize(record)?;
         }
-        Err(SerializeError::Csv("not implemented".to_string()))
+        w.flush()?;
+        Ok(())
     }
-}
-
-pub fn financial_records_to_csv_reader(records: Vec<FinancialRecord>) -> impl Read {
-    let mut csv = String::from("transaction_id,amount,description,date_at\n");
-    for record in records {
-        csv.push_str(&record.to_csv_line());
-    }
-    Cursor::new(csv.into_bytes())
 }
