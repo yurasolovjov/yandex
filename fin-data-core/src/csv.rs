@@ -3,10 +3,10 @@ use crate::{FinancialRecord, ParserRecord, ParseError, SerializeRecord, Serializ
 use csv::{ReaderBuilder, WriterBuilder};
 
 use std::fs::File;
-pub struct CSVReader;
-pub struct CSVWriter;
+pub struct CSVParser;
+pub struct CSVSerializer;
 
-impl ParserRecord for CSVReader {
+impl ParserRecord for CSVParser {
     fn parse<R: Read>(&self, input: R) -> Result<Vec<FinancialRecord>, ParseError> {
         let mut rdr = ReaderBuilder::new().from_reader(input);
         let mut records = Vec::new();
@@ -19,7 +19,7 @@ impl ParserRecord for CSVReader {
 }
 
 
-impl SerializeRecord for CSVWriter {
+impl SerializeRecord for CSVSerializer {
     fn serialize<W: Write, I: IntoIterator<Item=FinancialRecord>>(&self, records: I, writer: &mut W) -> Result<(), SerializeError> {
         let mut w = WriterBuilder::new().from_writer(writer);
         for record in records {

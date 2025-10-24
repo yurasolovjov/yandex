@@ -6,11 +6,22 @@ mod errors;
 
 pub use models::{FinancialRecord};
 pub use errors::{
-    ParseError, SerializeError
+    ParseError,
+    SerializeError
 };
 pub use csv::{
-    CSVReader
+    CSVParser,
+    CSVSerializer
 };
+pub use mt940::{
+    Mt940Parser,
+    Mt940Serializer
+};
+pub use camt053::{
+    Camt053Parser,
+    Camt053Serializer
+};
+
 use std::io::{ Write, Read};
 use tempfile::NamedTempFile;
 
@@ -25,14 +36,12 @@ pub trait SerializeRecord{
 
 #[cfg(test)]
 mod tests {
-    use crate::camt053::{Camt053Parser, Camt053Serializer};
-    use crate::csv::CSVWriter;
     use super::*;
 
     #[test]
     fn csv_read_write_tests() {
-        let parser = CSVReader;
-        let serializer = CSVWriter;
+        let parser = CSVParser;
+        let serializer = CSVSerializer;
 
         let input_records = vec![
             FinancialRecord {
