@@ -42,6 +42,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Format::Camt053 => Camt053Parser.parse(&*input_data)?,
     };
 
+    println!("parsed {} records", records.len());
+
     let mut output: Box<dyn Write> = match &cli.output {
         Some(path) => Box::new(File::create(path)?),
         None => Box::new(stdout()),
